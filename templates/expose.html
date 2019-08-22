@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}CCDDExpose{% endblock %}
+
+{% block pageheader %}
+<h1>CCDDrone: Setup Exposure</h1>
+{% endblock pageheader %}
+
+{% block pagecontent %}
+<form id="exposeform" name="exposeform" action="{{ url_for('expose') }}" 
+      method="POST" >
+  <div class="col-sm-4">
+    
+    <div class="form-group">
+      <label class="control-label" for="exposure">Exposure (s)</label>
+      <input type="number" id="exposure" name="exposure" class="form-control" value="5"/>
+    </div>
+    
+    <div class="form-group">
+      <label class="control-label" for="nexposures">Number of exposures</label>
+      <input type="number" id="nexposures" name="nexposrues" value="1" class="form-control"/>
+    </div>
+    
+    <div class="form-group">
+      <label class="control-label" for="filename">Base filename</label>
+      <input type="text" id="filename" name="filename" value="Image" class="form-control"/>
+    </div>
+    
+    <div style="text-align:right">
+      <a href="{{ url_for('index') }}" class="btn btn-warning">Cancel</a>
+      <button type="submit" class="btn btn-primary">Start</button>
+    </div>
+    
+  </div>
+  <div class="col-sm-8">
+    
+    <div class="form-group">
+      <label class="control-label" for="metadata">Metadata</label>
+      <textarea id="metadata" name="metadata" class="form-control" 
+                style="height:500px">{{ metadata }}
+      </textarea>
+    </div>
+    
+  </div>
+</form>
+{% endblock pagecontent %}

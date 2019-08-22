@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}CCDD GUI{% endblock %}
+
+{% block mystyles %}
+<style>
+  #output { background-color: white; color: black; height: 400px; overflow:auto}
+  #statustable tbody td { color: blue }
+  form { display: inline-block }
+</style>
+{% endblock %}
+
+
+{% block pageheader %} 
+<h1> CCDDrone GUI </h1>
+{% endblock %}
+
+{% block pagecontent %}
+
+<h2>Control</h2>
+<div class="btn-group btn-group-justified">
+  <a class="btn btn-warning">Startup and erase</a>
+  <a class="btn btn-info">Erase</a>
+  <a class="btn btn-primary">Edit Settings</a>
+  <a class="btn btn-success" href="{{ url_for('expose') }}">Expose</a>
+</div>
+
+<h2>Status</h2>
+<div class="col-sm-6">
+  <table class="table table-condensed" id="statustable">
+    <thead></thead>
+    <tbody>
+      <tr><th>Currently running</th><td id="currentprocess">---</td>
+        <td><button id="abort" class="btn btn-danger disabled">Abort</button></td>
+      </tr>
+      <tr><th>Exposure</th><td id="currentexposure">---</td>
+        <td><button id="endloop" class="btn btn-warning disabled">End</button></td>
+      </tr>
+      <tr><th>Last file</th><td id="lastfile">---</td></tr>
+      <tr><th>Status last updated</th><td id="updatetime">---</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="col-sm-6">
+  <h4>Program output</h4>
+  <div id="output"> 
+  </div>
+</div>
+
+
+
+{% endblock %}
