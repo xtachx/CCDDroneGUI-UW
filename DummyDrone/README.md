@@ -1,0 +1,1 @@
+This directory contains scripts mimicking CCDDrone behavior designed to test the GUI.  To use, set CCDDRONEPATH to 'DummyDrone' in config file. 

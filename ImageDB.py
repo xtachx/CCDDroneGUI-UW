@@ -1,73 +1,15 @@
 import pymongo
-from astropy.io import fits
 from datetime import datetime
-from collections import OrderedDict
+from Metadata import (validate_metadata, update_file_metadata, 
+                      default_required_metadata, get_file_metadata)
 import os
 import logging
 log = logging.getLogger(__name__)
 
-
-def metadata_allowed_values():
-    """Get the allowed values for each key in runtypes"""
-    return {'RUNTYPE': ('background', 'source', 'gasinjection', 'test'),
-            'SOURCE': ('Am-241', 'Co-60', 'Ba-133', 'Ar-27', 'Xe-127',
-                       'radioxenon'),
-           }
-
-
-def metadata_required_keys():
-    """Get keys required for metadata"""
-    return ('MEMO', 'BIAS', 'RUNTYPE', 'SYSTEM')
-
-
-def validate_metadata(metadata):
-    """Validate the metadata dict object to make sure it contains required keys
-    """
-    # make sure all required keys are present
-    required_keys = metadata_required_keys()
-    for key in required_keys:
-        if key not in metadata and key.lower() not in metadata:
-            print(f"Error, missing required key {key}")
-            return False
-
-    # make sure keys with restricted choices are correct
-    for key, values in metadata_allowed_values().items():
-        if key in metadata and metadata[key] not in values:
-            print(f"Error, allowed values for {key} are {values}")
-            return False
-
-    # if runtype is 'gasinjection' or 'source', key 'source' must be set
-    if (metadata['RUNTYPE'] in ('source', 'gasinjection') and
-        'SOURCE' not in metadata):
-        print("Error: 'source' must be specified for this runtype")
-        return False
-
-    return True
-
-
-def update_metadata(filename, metadata, validate=True):
-    """Add all the metadata in the `metadata` dict to the file
-    Exception will be raised on failure
-    Args:
-      filename (str): full path to the fitsfile to udpate
-      metadata (dict): value to add/modify. fits comment fields for individual
-                       keys should be in a special 'comments' key
-      validate (bool): if True (default) validate the metadata before applying
-    """
-    if not validate_metadata(metadata):
-        raise ValueError("Invalid metadata")
-
-    with fits.open(filename, 'update') as hdulist:
-        header = hdulist[0].header
-        header.add_history(f"Metadata modified on {datetime.utcnow()}")
-        comments = metadata.pop('comments', {})
-        header.update(metadata)
-        for key, value in comments.items():
-            header.comments[key] = value
-
-        # just in case someone wants to keep metadata around...
-        metadata['comments'] = comments
-
+def _tokey(key):
+    if isinstance(key, str):
+        return {'_id': key}
+    return key
 
 class ImageDB(object):
     def __init__(self, uri=None, collection=None, db=None, app=None):
@@ -81,6 +23,7 @@ class ImageDB(object):
         self.client = None
         self.db = None
         self.collection = None
+        self._config = {'required_metadata': default_required_metadata}
         if uri:
             self.connect(uri, collection, db)
         elif app:
@@ -92,7 +35,7 @@ class ImageDB(object):
 
     def init_app(self, app):
         """Get/set configuration from flask app"""
-        uri = app.config.setdefaut('IMAGEDB_URI', self.default_uri)
+        uri = app.config.setdefault('IMAGEDB_URI', self.default_uri)
         collection = app.config.setdefault('IMAGEDB_COLLECTION',
                                            self.default_collection)
         self.connect(uri, collection)
@@ -119,7 +62,30 @@ class ImageDB(object):
         self.collection.create_index('EXPSTART')
         self.collection.create_index('RUNTYPE')
         self.collection.create_index('SOURCE')
+        
+        
+    def getconfig(self):
+        dbconfig = self.collection.config.find_one({'_id': __name__})
+        if dbconfig:
+            self._config = dbconfig
+        return self._config
 
+    def setconfig(self, newconfig):
+        if 'required_metadata' not in newconfig:
+            raise KeyError("Missing 'required_metadata' key")
+        self.collection.config.replace_one({'_id':__name__}, newconfig,
+                                           upsert=True)
+        self._config = newconfig
+        return self._config
+        
+    def getcache(self, key):
+        """Get a cached value"""
+        return self.collection.cache.find_one(_tokey(key))
+
+    def setcache(self, key, val):
+        """Set a cached value"""
+        self.collection.cache.replace_one(_tokey(key), val, upsert=True)
+        
     def insert(self, filename, update=False, validate=True):
         """Insert entry for file into the database
         Args:
@@ -135,30 +101,9 @@ class ImageDB(object):
           ValueError if metadata is invalid
           DuplicateKeyError if entry exists and update is False
         """
-        metadata = OrderedDict(fits.getheader(filename, 0))
+        metadata = get_file_metadata(filename)
         if not validate_metadata(metadata):
             raise ValueError(F"Invalid metadata on {filename}")
-
-        metadata['filepath'] = os.path.abspath(filename)
-        metadata['filename'] = os.path.basename(filename)
-        # format timestamp keys
-        for key in ('EXPSTART', 'EXPSTOP', 'RDSTART', 'RDEND'):
-            if key not in metadata:
-                continue
-            val = metadata[key]
-            if isinstance(val, (int, float)):
-                metadata[key] = datetime.fromtimestamp(val)
-            elif isinstance(val, str):
-                try:
-                    dt = datetime.strptime(val, '%a %b %d %H:%M:%S %Y')
-                    metadata[key] = dt
-                except ValueError:
-                    pass
-
-        # deal with special fits card list keys
-        for key in ('HISTORY', 'COMMENT'):
-            if key in metadata and type(metadata[key]) is not str:
-                metadata[key] = list(metadata[key])
 
         if not update:
             return self.collection.insert_one(metadata).inserted_id

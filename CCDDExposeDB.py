@@ -6,22 +6,45 @@ import subprocess
 import shutil
 import os
 import json
-
+import tempfile
+import atexit
+import signal
 
 def printusage():
-    print(F"Usage: {sys.argv[0]} <fitsfile> <exposure> <cfgfile> <metafile>")
+    print(F"Usage: {sys.argv[0]} <exposure> <fitsfile> <metafile> [<thumb>]")
     sys.exit(1)
 
+_child_pid = None
+def killchild(sig, frame):
+    print("SIGTERM received", file=sys.stdout)
+    if _child_pid:
+        print("killing child process", _child_pid, file=sys.stdout)
+        os.kill(_child_pid, signal.SIGKILL)
+    print("Exiting", file=sys.stdout, flush=True)
+    sys.exit(signal.SIGTERM)
 
-if len(sys.argv) < 5:
+#atexit.register(killchild)
+signal.signal(signal.SIGTERM, killchild)
+
+def run_context(*args, **kwargs):
+    global _child_pid
+    proc = subprocess.Popen(*args, **kwargs)
+    _child_pid = proc.pid
+    returncode = proc.wait()
+    _child_pid = None
+    if returncode != 0:
+        sys.exit(returncode)
+
+
+if len(sys.argv) < 4:
     printusage()
 
-fitsfile, exposure, cfgfile, metafile = sys.argv[1:]
+exposure, fitsfile, metafile = sys.argv[1:4]
 if not fitsfile.endswith('.fits'):
     fitsfile += '.fits'
+thumb = sys.argv[4] if len(sys.argv) > 4 else None
 
 fitsfile = os.path.abspath(fitsfile)
-cfgfile = os.path.abspath(cfgfile)
 
 # first, validate the metadata
 with open(metafile) as mf:
@@ -50,18 +73,21 @@ if not CCDDExpose:
 CCDDronePath = os.path.dirname(CCDDExpose)
 
 # call CCDDExpose
-print("Running CCDDExpose")
-res = subprocess.run(['./CCDDExpose', fitsfile, exposure, cfgfile],
-                     cwd=CCDDronePath)
-if res.returncode:
-    sys.exit(res.returncode)
-
+print("Running CCDDExpose", flush=True)
+run_context(['./CCDDExpose', exposure, fitsfile ], cwd=CCDDronePath)
 
 # call updatedb
-print("Running CCDDUpdateDB")
-res = subprocess.run(['./CCDDUpdateDB.py', fitsfile, metafile])
-if res.returncode:
-    sys.exit(res.returncode)
+print("Running CCDDUpdateDB", flush=True)
+run_context(['./CCDDUpdateDB.py', fitsfile, metafile])
 
+# generate the thumbnail
+if thumb is not None:
+    print("Generating png image", flush=True)
+    with tempfile.NamedTemporaryFile(suffix='.png') as tmpfile:
+        tmpname = tmpfile.name
+        run_context(['fits2bitmap', fitsfile, '-o', tmpname, '--percent', '98'])
+        run_context(['convert', tmpname, '-scale', '25%', thumb])
+
+    
 print("Done")
 sys.exit(0)

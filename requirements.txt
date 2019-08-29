@@ -1,0 +1,10 @@
+astropy
+Flask
+Flask-WTF
+Flask-BasicAuth
+pymongo
+WTForms
+matplotlib
+Pillow
+gunicorn
+

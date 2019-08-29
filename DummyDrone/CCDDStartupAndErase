@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+echo "This code will power on the leach and apply the clock and bias voltages."
+echo "Then it will perform an erase procedure."
+echo "The process starts in 10 seconds. Please ensure that the Leach is switched ON"
+
+sleep 10
+
+echo "Checking for new settings and loading them.";
+echo "Starting up the controller.";
+echo "Applying biases and clocks.";
+echo "Set IDLE clocks to ON and then start erase procedure in 5 seconds.";
+sleep 5
+echo "Setting pixel array to (9V,9V)";
+echo "Switching Vsub / relay OFF (pin 11) and wait 5 seconds.";
+sleep 5
+echo "Switch Vsub / relay ON (pin 11). After 5 seconds, the clock voltages will be restored.";
+sleep 5
+echo "Clock voltages restored. Erase procedure is now complete.";
+echo "Leach system is now ready to take data.";

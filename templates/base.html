@@ -47,7 +47,7 @@
                       background-color: #cccccc} /*was FCF8E3*/
 	     nav img {max-height:50px}
          .table-condensed { font-size:small; }
-	     #messages {position:absolute; top:30px; right:2px; width:30%; z-index: 1}
+	     #messages {position:absolute; top:5px; right:10px; width:25%; z-index: 1}
 	    </style>
 	    {% block mystyles %}{% endblock %}
 	{%- endblock styles %}
@@ -105,6 +105,12 @@
 	    </div>
 	</div>
     {%- endblock content %}    
+    <div id="footer">
+        <footer class="page-footer" style="color:lightgray; text-align:center">
+            CCDDroneGUI running on system <em>{{ system() }}</em>
+        </footer>
+    </div>
+
 
     {%- endblock body %}
   </body>

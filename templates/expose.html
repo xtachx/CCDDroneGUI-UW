@@ -2,45 +2,160 @@
 
 {% block title %}CCDDExpose{% endblock %}
 
+{% block mystyles %}
+<style>
+  label small { margin-left: 4em; color: gray; }
+  .error {color: red; margin-left: 2em;}
+  .form-control { height: 28px; padding: 2px 6px;}
+</style>
+{% endblock %}
+
+{% block myscripts %}
+<script>
+  function setFilename(){
+    var runtype = document.getElementById("metadata_value_RUNTYPE").value;
+    var system = document.getElementById("metadata_value_SYSTEM").value;
+    var device = document.getElementById("metadata_value_DEVICE").value;
+    var ts = new Date().toISOString().slice(2,-8).replace(/[-,:]/g,"").replace('T','-');
+    var fname = [system, device, runtype, ts].join('_')+".fits";
+    document.getElementById("filename").value = fname;
+  }
+  function addMetaEntry(){
+    var entry = +$(".metaentry").last().data('entry') + 1;
+    var row = $(`<tr data-entry="${entry}"></tr>`).addClass("metaentry")
+      .html(`
+        <td><input name="metadata_key_${entry}" class="form-control"></td>
+        <td><input name="metadata_comment_${entry}" class="form-control"></td>
+        <td><select name="metadata_dtype_${entry}" class="form-control">
+              {% for dt in form.metadata.allowed_dtypes %}
+              <option value="{{ dt }}">{{ dt }}</option>
+              {% endfor %}
+            </select>
+        </td>
+        <td><input name="metadata<_value_${entry}" class="form-control"></td>
+        `).appendTo("#metadata tbody");
+  }
+  function removeMetaEntry(){
+    $(".metaentry").not('.metarequired').last().remove();
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    setFilename();
+    $(".form-control").on('input',setFilename);
+  });
+</script>
+{% endblock %}
+
 {% block pageheader %}
 <h1>CCDDrone: Setup Exposure</h1>
 {% endblock pageheader %}
 
+{% macro printrequiredmeta(requirement, md, i) %}
+  {% set key, comment, dtype, allowed = requirement %}
+  {% set data = md.data.get(key,'') %}
+  {% set valid = "metadata_value_"+key %}
+  <tr class="metaentry metarequired" data-entry="{{ i }}">
+    <th>
+      <input type="hidden" name="{{ md.getfieldname('key',i) }}" value="{{ key }}" />{{ key }}
+    </th>
+    <td>
+      <input type="hidden" name="{{ md.getfieldname('comment',i) }}" value="{{ comment }}" />{{ comment }}
+    </td>
+    <td>
+      <input type="hidden" name="{{ md.getfieldname('dtype',i) }}" value="{{ dtype }}" />{{ dtype }}
+    </td>
+    <td>
+      {% if allowed %}
+      <select name="{{ md.getfieldname('value',i) }}" class="form-control" id="{{ valid }}">
+        {% for option in allowed %}
+        <option value="{{ option }}"{% if option == data %} selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+      {% elif key == "NOTES" %}
+      <textarea class="form-control" name="{{ md.getfieldname('value',i) }}" id="{{ valid }}" required>{{ data }}</textarea>
+      {% else %}
+      <input type="text" name="{{ md.getfieldname('value',i) }}" id="{{ valid }}" class="form-control" value="{{ data }}" required>
+      {% endif %}
+    </td>
+  </tr>
+{% endmacro %}
+
+{% macro printmetaentry(key, md, i) %}
+  {% set data = md.data.get(key,'') %}
+  {% set comment = md.data.get('comments',{}).get(key,'') %}
+  {% set type = dtype(data) %}
+  <tr class="metaentry" data-entry="{{ i }}">
+    <th>
+      <input type="text" class="form-control" value="{{ key }}" name="{{ md.getfieldname('key',i) }}">
+    </th>
+    <td>
+      <input type="text" class="form-control" value="{{ comment }}" name="{{ md.getfieldname('comment',i) }}">
+    </td>
+    <td>
+      <select class="form-control" name="{{ md.getfieldname('dtype',i) }}" class="form-control">
+        {% for dt in md.allowed_dtypes %}
+        <option value="{{ dt }}" {% if dt == type %}selected{% endif %}>{{ dt }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td>
+      <input type="text" class="form-control" value="{{ data }}" name="{{ md.getfieldname('value', i) }}">
+    </td>
+  </tr>
+{% endmacro %}
+
 {% block pagecontent %}
 <form id="exposeform" name="exposeform" action="{{ url_for('expose') }}" 
       method="POST" >
-  <div class="col-sm-4">
-    
-    <div class="form-group">
-      <label class="control-label" for="exposure">Exposure (s)</label>
-      <input type="number" id="exposure" name="exposure" class="form-control" value="5"/>
+  <div>
+  <div class="col-sm-8" id="metadata" style="background-color:#a3f3a3; border-radius: 10px;">
+    {% if form.metadata.errors %} <div class="error">{{ form.metadata.errors }}</div>{% endif %}
+    <table id="metatable" class="table table-condensed ">
+      <thead>
+        <tr><th style="width:15%">Key</th><th style="width:25%">Comment</th><th style="width:5.4em">Type</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        {% for req in form.metadata.required_metadata %}
+        {{ printrequiredmeta(req, form.metadata, loop.index0) }}
+        {% endfor %}
+        {% set metamin = (form.metadata.required_metadata | length)-1 %}
+        {% for key in form.metadata.data if key not in (form.metadata.required_metadata|map(attribute=0))  %}
+        {% if key != "comments" %}
+          {{ printmetaentry(key, form.metadata, loop.index0+metamin) }}
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="text-align:right">
+      <div class="btn-group">
+        <span class="btn btn-warning glyphicon glyphicon-minus" onclick="removeMetaEntry();"></span>
+        <span class="btn btn-primary glyphicon glyphicon-plus" onclick="addMetaEntry();"></span>
+      </div>
     </div>
-    
+  </div>
+  
+  <div class="col-sm-4" style="background-color: lightblue; padding:10px; border-radius: 10px; height:100%">
+    {% for field in form if field.name != 'metadata' %}
     <div class="form-group">
-      <label class="control-label" for="nexposures">Number of exposures</label>
-      <input type="number" id="nexposures" name="nexposrues" value="1" class="form-control"/>
+      {{ field.label(class_="control-label") }}
+      {%- if field.errors -%}<span class="error">{{ field.errors }}</span>{%- endif -%}
+      {{ field(class_="form-control") }}
     </div>
+    {% endfor %}
     
-    <div class="form-group">
-      <label class="control-label" for="filename">Base filename</label>
-      <input type="text" id="filename" name="filename" value="Image" class="form-control"/>
-    </div>
     
     <div style="text-align:right">
       <a href="{{ url_for('index') }}" class="btn btn-warning">Cancel</a>
       <button type="submit" class="btn btn-primary">Start</button>
     </div>
-    
-  </div>
-  <div class="col-sm-8">
-    
-    <div class="form-group">
-      <label class="control-label" for="metadata">Metadata</label>
-      <textarea id="metadata" name="metadata" class="form-control" 
-                style="height:500px">{{ metadata }}
-      </textarea>
+    {% if form.errors %}
+    <div class="error">
+      Errors were detected
     </div>
+    {% endif %}
     
   </div>
+  </div>
+  
+  
 </form>
 {% endblock pagecontent %}

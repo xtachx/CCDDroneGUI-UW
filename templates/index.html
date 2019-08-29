@@ -3,49 +3,101 @@
 
 {% block mystyles %}
 <style>
-  #output { background-color: white; color: black; height: 400px; overflow:auto}
+  #programoutput { background-color: white; color: black; height: 250px; overflow:auto; 
+    padding-right: 0px; padding-left: 1px}
   #statustable tbody td { color: blue }
+  #statustable tbody td .btn {width:55px; padding: 2px;}
   form { display: inline-block }
+  #state {margin-left:80px;}
+  #lastimg {max-width:90%; max-height:450px; padding-bottom:10px}
 </style>
+{% endblock %}
+
+{% block myscripts %}
+<script>
+var _getstatusto = null;
+function getstatus(){
+  clearTimeout(_getstatusto);
+  _getstatusto = null;
+  $.get("{{ url_for('status') }}", function(data){
+    var stateclass = data.state == 'running' ? 'text-success' : data.state == 'error' ? 'text-danger' : '';
+    $("#state").text(data.state || '').attr('class', stateclass);
+    $("#currentprocess").text(data.runningcmd || '---');
+    $("#programoutput").text(data.cmdoutput || '');
+    $("#programoutput").prop('scrollTop', $("#programoutput").prop('scrollHeight') );
+    $("#updatetime").text(data.statustime);
+    $("#lastfile").text(data.lastfile || '---');
+    $("#currentexposure").text((data.current_exposure || '--')+" out of "+(data.max_exposures || '---'));
+    $("#abort").toggleClass('disabled', data.state != 'running');
+    $("#endloop").toggleClass('disabled', !(data.max_exposures > data.current_exposure));
+    var lastimg = $("#lastimg");
+    if(data.lastimg_timestamp > lastimg.data('timestamp')){
+      lastimg.attr('alt', "Loading latest image...")
+        .attr('src',data.lastimg+'?timestamp='+data.lastimg_timestamp)
+        .data('timestamp', data.lastimg_timestamp);
+    }
+    _getstatusto = setTimeout(getstatus, data.state == 'running' ? 1000 : 10000);
+  });
+}
+
+
+
+document.addEventListener('DOMContentLoaded', function(){
+  getstatus();
+  $(".postlink").click(function(event){
+    event.stopPropagation();
+    event.preventDefault();
+    if($(this).hasClass("disabled")) return;
+    $("<form></form>").css('display', 'none')
+      .attr('method','POST').attr('action',$(this).attr('href'))
+      .appendTo("body").submit();
+  });
+  
+});
+</script>
 {% endblock %}
 
 
 {% block pageheader %} 
-<h1> CCDDrone GUI </h1>
+<div class="col-sm-3"><h1> CCDDrone GUI </h1></div>
+<div class="col-sm-9">
+  <div class="btn-group btn-group-justified">
+    <a class="btn btn-warning postlink" id="dostartup" href="{{ url_for('startup') }}">Startup and erase</a>
+    <a class="btn btn-info postlink" id="doerase" href="{{ url_for('erase') }}">Erase</a>
+    <a class="btn btn-primary" href="{{ url_for('editconfig') }}">Edit Settings</a>
+    <a class="btn btn-success" href="{{ url_for('expose') }}">Expose</a>
+  </div>
+</div>
 {% endblock %}
 
 {% block pagecontent %}
 
-<h2>Control</h2>
-<div class="btn-group btn-group-justified">
-  <a class="btn btn-warning">Startup and erase</a>
-  <a class="btn btn-info">Erase</a>
-  <a class="btn btn-primary">Edit Settings</a>
-  <a class="btn btn-success" href="{{ url_for('expose') }}">Expose</a>
-</div>
-
-<h2>Status</h2>
-<div class="col-sm-6">
+<div class="col-sm-5">
+  <h2>Status <small id="state"></small></h2>
   <table class="table table-condensed" id="statustable">
     <thead></thead>
     <tbody>
       <tr><th>Currently running</th><td id="currentprocess">---</td>
-        <td><button id="abort" class="btn btn-danger disabled">Abort</button></td>
+        <td align="right"><button id="abort" class="btn btn-danger postlink disabled" href="{{ url_for('abort') }}">Abort</button></td>
       </tr>
       <tr><th>Exposure</th><td id="currentexposure">---</td>
-        <td><button id="endloop" class="btn btn-warning disabled">End</button></td>
+        <td align="right"><button id="endloop" class="btn btn-warning postlink disabled" href="{{ url_for('endexposeloop') }}">End</button></td>
       </tr>
-      <tr><th>Last file</th><td id="lastfile">---</td></tr>
-      <tr><th>Status last updated</th><td id="updatetime">---</td></tr>
+      <tr><th>Last file</th><td id="lastfile">---</td><td></td></tr>
+      <tr><th>Status last updated</th><td id="updatetime">---</td><td></td></tr>
     </tbody>
   </table>
+  
 </div>
-<div class="col-sm-6">
-  <h4>Program output</h4>
-  <div id="output"> 
-  </div>
+<div class="col-sm-7">
+  <!-- <h4>Program output</h4> -->
+  <pre id="programoutput"> 
+  </pre>
 </div>
 
+<div style="text-align:center">
+  <img id="lastimg" src="static/lastimg.png" data-timestamp="0">
+</div>  
 
 
 {% endblock %}

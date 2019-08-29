@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from ImageDB import ImageDB, update_metadata
+from ImageDB import ImageDB
+from Metadata import update_file_metadata
 import sys
 import json
 import os
@@ -21,7 +22,7 @@ if len(sys.argv) > 2:
     metadata = {}
     with open(metafile) as f:
         metadata = json.load(f)
-    update_metadata(fitsfile, metadata, validate=False)
+    update_file_metadata(fitsfile, metadata, validate=False)
 
 dburi = os.environ.get('IMAGEDB_URI', ImageDB.default_uri)
 collection = os.environ.get('IMAGEDB_COLLECTION', ImageDB.default_collection)

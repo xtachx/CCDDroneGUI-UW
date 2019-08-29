@@ -1,0 +1,14 @@
+#!/bin/bash -e
+
+
+
+echo "This code will perform an erase procedure."
+echo "The process starts in 10 seconds.";
+sleep 10
+echo "Setting pixel array to (9V,9V)";
+echo "Switching Vsub / relay OFF (pin 11) and wait 5 seconds.";
+sleep 5
+echo "Switch Vsub / relay ON (pin 11). After 5 seconds, the clock voltages will be restored.";
+sleep 5
+echo "Clock voltages restored. Erase procedure is now complete.";
+echo "Leach system is now ready to take data.";

@@ -1,0 +1,19 @@
+#!/bin/bash -e
+
+echo "This code applies new settings according to the selected config file."
+
+NEWFILE="$1"
+if [ -z "$NEWFILE" ] ; then
+    echo "Default usage: ./CCDDApplyNewSettings <config file>. "
+    echo "No config file was specified. Using config/Config.ini"
+    NEWFILE="config/Config.ini"
+fi
+
+mkdir -p do_not_touch
+cp $NEWFILE do_not_touch/LastSettings.ini
+
+sleep 2
+echo "Checking for new settings and loading them.";
+sleep 2
+echo "New settings have been uploaded to the Leach system.";
+sleep 2
