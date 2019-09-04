@@ -1,7 +1,7 @@
 # CCDDExpose configuration
 DATAPATH = '/data/local/fitsfiles'
 CCDDRONEPATH = '/home/ccduser/software/CCDDrone'
-CDDCONFIGFILE = 'config/Config_GUI.ini'
+CCDDCONFIGFILE = 'config/Config_GUI.ini'
 CCDDMETADATAFILE = 'config/Metadata_GUI.ini'
 
 LOGFILE = 'logs/CCDDroneGUI.log'
