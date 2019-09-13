@@ -2,7 +2,7 @@
 DATAPATH = '/data/local/fitsfiles'
 CCDDRONEPATH = '/home/ccduser/software/CCDDrone'
 CCDDCONFIGFILE = 'config/Config_GUI.ini'
-CCDDMETADATAFILE = 'config/Metadata_GUI.ini'
+CCDDMETADATAFILE = 'config/Metadata_GUI.json'
 
 LOGFILE = 'logs/CCDDroneGUI.log'
 EXECUTOR_LOGFILE = 'logs/Executor.log'

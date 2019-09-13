@@ -44,7 +44,7 @@ class Executor(object):
             os.environ['PATH'] = os.pathsep.join([self.ccddpath, 
                                                   os.getenv('PATH')])
         CCDDConfigFile = getkey('CCDDCONFIGFILE','config/Config_GUI.ini')
-        CCDDMetaFile = getkey('CCDDMETADATAFILE', 'config/Metadata_GUI.ini')
+        CCDDMetaFile = getkey('CCDDMETADATAFILE', 'config/Metadata_GUI.json')
         self.outputConfig = path.abspath(path.join(self.ccddpath, 
                                                    CCDDConfigFile))
         self.outputMetadata = path.join(self.ccddpath, CCDDMetaFile)
