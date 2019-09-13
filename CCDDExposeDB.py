@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ImageDB import validate_metadata
+from Metadata import validate_metadata
 import sys
 import socket
 import subprocess
@@ -9,6 +9,7 @@ import json
 import tempfile
 import atexit
 import signal
+from astropy.io import fits
 
 def printusage():
     print(F"Usage: {sys.argv[0]} <exposure> <fitsfile> <metafile> [<thumb>]")
@@ -75,6 +76,7 @@ CCDDronePath = os.path.dirname(CCDDExpose)
 # call CCDDExpose
 print("Running CCDDExpose", flush=True)
 run_context(['./CCDDExpose', exposure, fitsfile ], cwd=CCDDronePath)
+print("File saved to", fitsfile)
 
 # call updatedb
 print("Running CCDDUpdateDB", flush=True)
@@ -86,8 +88,21 @@ if thumb is not None:
     with tempfile.NamedTemporaryFile(suffix='.png') as tmpfile:
         tmpname = tmpfile.name
         run_context(['fits2bitmap', fitsfile, '-o', tmpname, '--percent', '98'])
-        run_context(['convert', tmpname, '-scale', '25%', thumb])
+        run_context(['convert', tmpname, '-scale', '50%', thumb])
 
+
+#print some statistics
+data = fits.getdata(fitsfile)
+print("Image info:")
+print("  Shape:", data.shape)
+print("  Min:  ", data.min())
+print("  Max:  ", data.max())
+print("  Mean: ", round(data.mean(),2))
+print("  Std:  ", round(data.std(),2))
+std = data.std(axis=0)
+print("  Min column std: ", round(std.min(),2))
+print("  Max column std: ", round(std.max(),2))
+print("  Mean column std:", round(std.mean(),2))
     
 print("Done")
 sys.exit(0)

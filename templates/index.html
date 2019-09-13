@@ -9,7 +9,7 @@
   #statustable tbody td .btn {width:55px; padding: 2px;}
   form { display: inline-block }
   #state {margin-left:80px;}
-  #lastimg {max-width:90%; max-height:450px; padding-bottom:10px}
+  #lastimg {max-width:90%; /*max-height:450px;*/ padding-bottom:10px; padding-top: 10px;}
 </style>
 {% endblock %}
 
@@ -48,9 +48,11 @@ document.addEventListener('DOMContentLoaded', function(){
     event.stopPropagation();
     event.preventDefault();
     if($(this).hasClass("disabled")) return;
-    $("<form></form>").css('display', 'none')
-      .attr('method','POST').attr('action',$(this).attr('href'))
-      .appendTo("body").submit();
+	if(confirm("Are you sure you want to run '"+$(this).text()+"'?")){
+		$("<form></form>").css('display', 'none')
+			.attr('method','POST').attr('action',$(this).attr('href'))
+			.appendTo("body").submit();
+	}
   });
   
 });
@@ -96,7 +98,8 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 
 <div style="text-align:center">
-  <img id="lastimg" src="static/lastimg.png" data-timestamp="0">
+  <img id="lastimg" src="static/lastimg.png" data-timestamp="0" 
+       alt="CCD Image preview">
 </div>  
 
 

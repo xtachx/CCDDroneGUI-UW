@@ -2,6 +2,7 @@ astropy
 Flask
 Flask-WTF
 Flask-BasicAuth
+Flask-Bootstrap
 pymongo
 WTForms
 matplotlib

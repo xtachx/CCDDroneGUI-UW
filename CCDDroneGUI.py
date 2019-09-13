@@ -66,8 +66,16 @@ def create_app(cfgfile='config.default.py', instance_path=None):
         app.extensions['ImageDB'].setcache(key, val)
     
     @app.template_global()
+    def hostname():
+        return socket.gethostname()
+    
+    @app.template_global()
     def system():
-        return socket.gethostname().split('.')[0]
+        return hostname().split('.')[0]
+
+    @app.template_global()
+    def ccddpath():
+        return app.config.get('CCDDRONEPATH')
 
     @app.template_global()
     def dtype(val):

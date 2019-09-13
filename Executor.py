@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from datetime import datetime
 import logging
@@ -44,7 +45,8 @@ class Executor(object):
                                                   os.getenv('PATH')])
         CCDDConfigFile = getkey('CCDDCONFIGFILE','config/Config_GUI.ini')
         CCDDMetaFile = getkey('CCDDMETADATAFILE', 'config/Metadata_GUI.ini')
-        self.outputConfig = path.join(self.ccddpath, CCDDConfigFile)
+        self.outputConfig = path.abspath(path.join(self.ccddpath, 
+                                                   CCDDConfigFile))
         self.outputMetadata = path.join(self.ccddpath, CCDDMetaFile)
         log.debug("New executor created, config=%s, meta=%s",
                   self.outputConfig, self.outputMetadata)
@@ -61,6 +63,8 @@ class Executor(object):
                  self.outputConfig]
         last = sorted(files, reverse=True,
                       key=lambda f: path.getmtime(f) if path.isfile(f) else 0)
+        
+        log.debug("Reading config settings from %s", last[0])
         try:
             with open(last[0]) as f:
                 return f.read()
@@ -157,15 +161,19 @@ class Executor(object):
             self.logfile.close()
         self.logfile = open(self.logfilename, logmode, buffering=0)
         if env is not None:
-            env = dict(os.environ, **env)
+            env = dict(os.environ, **env, 
+                       PYTHONPATH=os.pathsep.join(sys.path))
+            
         self.process = subprocess.Popen(args, cwd=cwd, stdout=self.logfile,
                                         stderr=subprocess.STDOUT, env=env)
 
     def StartupAndErase(self):
-        return self._run(['./CCDDStartupAndErase'], cwd=self.ccddpath)
+        return self._run(['./CCDDStartupAndErase', self.outputConfig], 
+                         cwd=self.ccddpath)
 
     def PerformEraseProcedure(self):
-        return self._run(['./CCDDPerformEraseProcedure'], cwd=self.ccddpath)
+        return self._run(['./CCDDPerformEraseProcedure', self.outputConfig], 
+                         cwd=self.ccddpath)
 
     def ApplyNewSettings(self, newconf=None):
         if newconf:
