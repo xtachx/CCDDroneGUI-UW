@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}File info{% endblock %}
+
+{% block mystyles %}
+<style>
+</style>
+{% endblock %}
+
+{% block myscripts %}
+<script></script>
+{% endblock %}
+
+{% block pageheader %}
+<h1>File {{ fileinfo.filename }} </h1>
+{% endblock %}
+
+{% block pagecontent %}
+<div class="col-sm-4">
+{% set topkeys=['RUNTYPE', 'NOTES', 'EXPSTART', 'EXPTIME', 'RDTIME'] %}
+<table id="infotable" class="table table-striped">
+  <thead></thead>
+  <tbody>
+    {% for key in topkeys if key in fileinfo %}
+    <tr class="topkey"><th class="infokey">{{ key }}</th><td class="infoval">{{ fileinfo[key] }}</td></tr>
+    {% endfor %}
+    <tr class="break warning" ><th></th><td></td></tr>
+    {% for key, val in fileinfo.items() if key not in topkeys and key != '_id' %}
+    <tr><th class="infokey">{{ key }}</th><td class="infoval">{{ val }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div class="col-sm-8">
+  {% set imgsrc=url_for('getimg',filename=fileinfo.filename) %}
+  <a href="{{ imgsrc }}" ><img class="img-responsive" src="{{ imgsrc }}" alt="Loading image..."></a>
+</div>
+
+{% endblock %}

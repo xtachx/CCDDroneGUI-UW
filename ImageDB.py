@@ -61,8 +61,7 @@ class ImageDB(object):
         self.collection.create_index('filename', unique=True)
         self.collection.create_index('EXPSTART')
         self.collection.create_index('RUNTYPE')
-        self.collection.create_index('SOURCE')
-        
+                
         
     def getconfig(self):
         dbconfig = self.collection.config.find_one({'_id': __name__})
@@ -111,3 +110,13 @@ class ImageDB(object):
             search = dict(filename=metadata['filename'])
             self.collection.replace_one(search, metadata, upsert=True)
             return self.collection.find_one(search, {'_id': True})['_id']
+
+    def find(self, *args, **kwargs):
+        """ Run find command against the image collection. Args are passed
+        directly to `pymongo.Collection.find`.
+        """
+        return self.collection.find(*args, **kwargs)
+        
+    def find_one(self, *args, **kwargs):
+        """ Run `pymongo.Collection.find_one` with the args provided """
+        return self.collection.find_one(*args, **kwargs)

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Data table{% endblock %}
+
+{% block mystyles %}
+<style>
+  #datatable { background-color: white }
+  #datatable thead {  }
+  .column-filter { margin-left: 5px; }
+</style>
+{% endblock %}
+
+{% block myscripts %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='js/DataTables/datatables.css') }}">
+<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/DataTables/datatables.js') }}"></script>
+<script>
+  $(document).ready(function() {
+    $(".column-filter").on('click', function(event){ event.preventDefault(); event.stopPropagation(); })
+      .on('change clear input keydown keypress keyup submit', function(event){ 
+        event.stopPropagation(); 
+        var col = table.column($(this).data('colnum'));
+        if(col.search() !== this.value ){
+          col.search(this.value).draw();
+        }
+      });
+    
+    
+    var table = $('#datatable').DataTable({
+      paging: false,
+      searching: true,
+      scrollX: false,
+      ordering: true,
+      order: [], 
+      fixedHeader: {
+        header: true,
+      },
+      columnDefs: [
+        { targets: '_all', searchable: true },
+      ],
+      dom: 'iti',
+    });
+    //add per-column 
+     
+  });
+</script>
+{% endblock %}
+
+{% block pageheader %}
+<h1>Saved Images</h1>
+{% endblock %}
+
+{% block pagecontent %}
+
+<table id="datatable" class="table table-striped table-bordered">
+  <thead>
+    <tr class="text-primary">
+      {% for col in columns %}
+      <th class="columnlabel ">{{ col }}
+        {% if col in selectOptions %}
+        <select class="form-control column-filter" id="filter-{{ col }}" data-column="{{ col }}" 
+                data-colnum="{{ loop.index0 }}" >
+          <option value=""></option>
+          {% for opt in selectOptions[col] %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input class="form-control column-filter" type="text" id="filter-{{ col }}" data-column="{{ col }}" 
+               data-colnum="{{ loop.index0 }}">
+        {% endif %}
+      </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in data %}
+    <tr class="dataentry">
+      {% for col in columns %}
+      <td>
+        {% if col=="filename" %}<a href="{{ url_for('showfile',filename=entry['filename']) }}">{% endif %}
+        {{ entry.get(col, '') }}
+        {% if col=="filename" %}</a>{% endif%}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

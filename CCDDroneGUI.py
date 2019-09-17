@@ -1,5 +1,5 @@
 from flask import (Flask, render_template, request, redirect, url_for, flash, 
-                   json, make_response)
+                   json, make_response, abort, send_file)
 from flask_bootstrap import Bootstrap
 from flask_basicauth import BasicAuth
 import logging
@@ -12,6 +12,8 @@ import os
 from Executor import Executor
 from logging.handlers import RotatingFileHandler
 import atexit
+import subprocess
+import tempfile
 
 # create the application
 def create_app(cfgfile='config.default.py', instance_path=None):
@@ -49,7 +51,7 @@ def create_app(cfgfile='config.default.py', instance_path=None):
         file_handler.setFormatter(formatter)
         app.logger.addHandler(file_handler)
     # turn down werkzeug logs
-    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    #logging.getLogger('werkzeug').setLevel(logging.WARNING)
     
     # set up handlers
     BasicAuth(app)
@@ -59,11 +61,14 @@ def create_app(cfgfile='config.default.py', instance_path=None):
     app.executor = Executor(app.config)
     atexit.register(app.executor.abort)
     
+    def getdb():
+        return app.extensions['ImageDB']
+    
     def _getcache(key):
-        return app.extensions['ImageDB'].getcache(key)
+        return getdb().getcache(key)
     
     def _setcache(key, val):
-        app.extensions['ImageDB'].setcache(key, val)
+        getdb().setcache(key, val)
     
     @app.template_global()
     def hostname():
@@ -146,7 +151,7 @@ def create_app(cfgfile='config.default.py', instance_path=None):
 
 
     @app.route('/abort', methods=('POST', ))
-    def abort():
+    def abortproc():
         app.executor.abort()
         flash("Abort submitted", 'warning')
         return redirect(url_for('index'))
@@ -157,6 +162,44 @@ def create_app(cfgfile='config.default.py', instance_path=None):
         flash("Exposures will end after current one", 'success')
         return redirect(url_for('index'))
 
+
+    ####### database browser endpoints ###########
+    @app.route('/show/<filename>')
+    def showfile(filename):
+        info = getdb().find_one({'filename': filename})
+        if not info:
+            abort(404, f"No registered file with name '{filename}'")
+        return render_template('showfile.html',fileinfo=info)
+
+    @app.route('/getimg/<filename>')
+    def getimg(filename):
+        datapath = app.config.get('DATAPATH')
+        filepath = os.path.join(datapath, filename)
+        if not os.path.isfile(filepath):
+            abort(404, f"Raw fits file '{filename}' not present")
+        with tempfile.NamedTemporaryFile(suffix='.png') as tmpfile:
+            tmpname = tmpfile.name
+            subprocess.run(['fits2bitmap', filepath, '-o', tmpname, 
+                            '--percent', '98'])
+            return send_file(tmpname)
+        return abort(500, "something went wrong sending file...")
+
+    @app.route('/list')
+    def list():
+        columns = ('EXPSTART', 'RUNTYPE', 'NOTES', 'filename')
+        data = getdb().find({}, {c:True for c in columns},
+                            sort=(('EXPSTART',-1),) )
+
+        # find columns that have limited choices
+        selectOptions = {}
+        reqmd = getdb().getconfig().get('required_metadata',[])
+        for key, comment, dtype, allowed in reqmd:
+            if key in columns and allowed:
+                selectOptions[key] = allowed
+        return render_template("datatable.html",
+                               columns=columns, data=data, 
+                               selectOptions=selectOptions)
+        
     return app
 
     

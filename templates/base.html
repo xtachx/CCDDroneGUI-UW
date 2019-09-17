@@ -45,7 +45,9 @@
 	     #content {background-color: #eeeeee; margin-top:0px; min-height:90%; margin-left:5%; margin-right:5%;}
 	     nav.navbar { margin-bottom: 0px; 
                       background-color: #cccccc} /*was FCF8E3*/
-	     nav img {max-height:50px}
+         .navbar-brand {padding-top: 0px; padding-bottom: 0px }
+	     nav img, .navbar-brand img {max-height:50px; margin-top: 0px; display: inline-block}
+         
          .table-condensed { font-size:small; }
 	     #messages {position:absolute; top:5px; right:10px; width:25%; z-index: 1}
 	    </style>
@@ -66,20 +68,29 @@
     {% block navbar %}
 	<nav class="navbar navbar-default" id="navbartop" >
 	    <div class="container-fluid" >
-		<div class="navbar-header">
-		    <a class="navbar-left" href="https://github.com/xtachx/CCDDrone">
+		<div class="nav navbar-header navbar-left">
+		    <a class="navbar-brand" href="https://github.com/xtachx/CCDDrone">
 			{% block brand %}
-			<img src="{{ url_for('static', filename="CCDDrone_brand.png") }}" alt="CCDDrone" 
-                class="brand" >
+			<img src="{{ url_for('static', filename='CCDDroneLogo.png') }}"  class="img-rounded" alt="">
+            CCDDrone
 			{% endblock %}
 		    </a>
         </div>
 		<div class="collapse navbar-collapse" id="navbarcontent" >
 		    <ul class="nav navbar-nav" >
 			{{ navbaritem(url_for('index'),"Home") }}
+            {{ navbaritem(url_for('list'), "Browse Data") }}
 			{% block navbarlinks %}{% endblock %}
 		    </ul>
-		    {% block navbarextra %}{% endblock %}
+            <ul class="nav navbar-nav navbar-right">
+                {{ navbardropdown("External Links", [
+                    ('https://'+hostname()+':11000', "Slowcontrol"),
+                    ('https://confluence.pnnl.gov/confluence/display/CCDRND/CCD+Research+Home', "Confluence"),
+                    ('https://jira.pnnl.gov/jira/projects/CAS/issues', "JIRA"),
+                    ('https://stash.pnnl.gov/projects/CAS', "Stash (code repo)"),
+                    ]) }}
+                {% block navbarextra %}{% endblock %}
+            </ul>
 		</div>
 	    </div>
 	</nav>

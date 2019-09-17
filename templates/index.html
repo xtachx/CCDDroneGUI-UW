@@ -19,6 +19,7 @@ var _getstatusto = null;
 function getstatus(){
   clearTimeout(_getstatusto);
   _getstatusto = null;
+  var resend=10000;
   $.get("{{ url_for('status') }}", function(data){
     var stateclass = data.state == 'running' ? 'text-success' : data.state == 'error' ? 'text-danger' : '';
     $("#state").text(data.state || '').attr('class', stateclass);
@@ -36,7 +37,12 @@ function getstatus(){
         .attr('src',data.lastimg+'?timestamp='+data.lastimg_timestamp)
         .data('timestamp', data.lastimg_timestamp);
     }
-    _getstatusto = setTimeout(getstatus, data.state == 'running' ? 1000 : 10000);
+    if(data.state == 'running')
+      resend = 1000;
+  }).fail(function(){ 
+    $("#state").text("Server not responding!").attr('class','alert-danger'); 
+  }).always(function(){ 
+    _getstatusto = setTimeout(getstatus, resend);
   });
 }
 
@@ -80,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <thead></thead>
     <tbody>
       <tr><th>Currently running</th><td id="currentprocess">---</td>
-        <td align="right"><button id="abort" class="btn btn-danger postlink disabled" href="{{ url_for('abort') }}">Abort</button></td>
+        <td align="right"><button id="abort" class="btn btn-danger postlink disabled" href="{{ url_for('abortproc') }}">Abort</button></td>
       </tr>
       <tr><th>Exposure</th><td id="currentexposure">---</td>
         <td align="right"><button id="endloop" class="btn btn-warning postlink disabled" href="{{ url_for('endexposeloop') }}">End</button></td>
