@@ -3,3 +3,4 @@ __pycache__/
 *~
 logs/
 static/lastimg.png
+DummyDrone/config/*_GUI.*
