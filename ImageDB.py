@@ -29,7 +29,7 @@ class ImageDB(object):
         elif app:
             self.init_app(app)
 
-    default_uri = "mongodb://ccd21.pnl.gov/silas"
+    default_uri = "mongodb://localhost/ccddrone"
     default_db = 'test'
     default_collection = 'ccdimages'
 

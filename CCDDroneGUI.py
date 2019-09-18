@@ -15,24 +15,53 @@ import atexit
 import subprocess
 import tempfile
 
+
+# some utility functions
+def hostname():
+    return socket.gethostname()
+
+def system():
+    return hostname().split('.')[0]
+
 # create the application
-def create_app(cfgfile='config.default.py', instance_path=None):
+def create_app(cfgfile=None, instance_path=None):
     
     app = Flask(__name__, instance_path=instance_path,
                 instance_relative_config=bool(instance_path))
 
-    # configuration if file was given
+    # see if a config file exists and load it
+    def try_config(filename):
+        """ if filename exists, load it. return true if load successful """
+        # test file, allow a 'config' subdir
+        if not os.path.isfile(filename):
+            filename = os.path.join('config', filename)
+        print("Testing for config file", filename)
+        if os.path.isfile(filename):
+            print("Loading configuration from", filename)
+            if filename.endswith('.py'):
+                app.config.from_pyfile(filename)
+            elif filename.endswith('.json'):
+                app.config.from_json(filename)
+            else:
+                print("Unknown suffix on file f{filename}, assume pyfile")
+                app.config.from_pyfile(filename)
+            return True
+        return False
+
+
     if cfgfile:
-        app.config.from_pyfile(cfgfile)
+        if not try_config(cfgfile):
+            raise FileNotFoundError(cfgfile)
+    else:
+        testfiles = ('config.'+system()+'.py',
+                     'config.'+hostname()+'.py',
+                     'config.default.py')
+        for fname in testfiles:
+            if try_config(fname):
+                break
     
-    app.config.setdefault('CCDDCONFIGFILE','config/Config_GUI.ini')
-    app.config.setdefault('DATAPATH','/data/local/fitsfiles')
+    app.config.setdefault('DATAPATH','data')
     app.config.setdefault('LOGFILE','logs/CCDDroneGUI.log')
-    app.config.setdefault('CCDDRONEPATH', 
-                          os.path.expanduser("~/software/CCDDrone"))
-    app.config.setdefault('BASIC_AUTH_USERNAME', 'ccduser')
-    app.config.setdefault('BASIC_AUTH_PASSWORD', 'ccduser')
-    app.config.setdefault('BASIC_AUTH_FORCE', True)
     if not app.secret_key:
         app.secret_key = 'dev'
         
@@ -70,17 +99,8 @@ def create_app(cfgfile='config.default.py', instance_path=None):
     def _setcache(key, val):
         getdb().setcache(key, val)
     
-    @app.template_global()
-    def hostname():
-        return socket.gethostname()
-    
-    @app.template_global()
-    def system():
-        return hostname().split('.')[0]
-
-    @app.template_global()
-    def ccddpath():
-        return app.config.get('CCDDRONEPATH')
+    app.add_template_global(hostname)
+    app.add_template_global(system)
 
     @app.template_global()
     def dtype(val):
@@ -90,7 +110,7 @@ def create_app(cfgfile='config.default.py', instance_path=None):
     def index():
         return render_template("index.html")
 
-    @app.route('/status')
+    @app.route('/api/status')
     def status():
         return json.jsonify(app.executor.getstatus())
 
@@ -171,7 +191,7 @@ def create_app(cfgfile='config.default.py', instance_path=None):
             abort(404, f"No registered file with name '{filename}'")
         return render_template('showfile.html',fileinfo=info)
 
-    @app.route('/getimg/<filename>')
+    @app.route('/api/getimg/<filename>')
     def getimg(filename):
         datapath = app.config.get('DATAPATH')
         filepath = os.path.join(datapath, filename)

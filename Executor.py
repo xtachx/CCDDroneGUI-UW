@@ -29,7 +29,7 @@ class Executor(object):
             LASTIMGPATH (str): path to save png of last image taken
         """
         def getkey(key, default=None): 
-            return config.get(key, kwargs.get(key, default))
+            return kwargs.get(key, config.get(key, default))
         self.logfilename = getkey('EXECUTOR_LOGFILE', 'logs/Executor.log')
         self.logfile = None
         self.process = None
@@ -38,24 +38,35 @@ class Executor(object):
         self.exposethread = None
         self.lastfile=None
         self.lastimgpath = getkey('LASTIMGPATH', 'static/lastimg.png')
-        self.datapath = getkey("DATAPATH", '/data/local/fitsfiles')
+        self.datapath = getkey("DATAPATH", 'data')
         self.ccddpath = getkey('CCDDRONEPATH')
-        if self.ccddpath not in os.getenv('PATH'):
-            os.environ['PATH'] = os.pathsep.join([self.ccddpath, 
-                                                  os.getenv('PATH')])
         CCDDConfigFile = getkey('CCDDCONFIGFILE','config/Config_GUI.ini')
         CCDDMetaFile = getkey('CCDDMETADATAFILE', 'config/Metadata_GUI.json')
-        self.outputConfig = path.abspath(path.join(self.ccddpath, 
-                                                   CCDDConfigFile))
-        self.outputMetadata = path.join(self.ccddpath, CCDDMetaFile)
-        log.debug("New executor created, config=%s, meta=%s",
-                  self.outputConfig, self.outputMetadata)
-
         self.imagedb_uri = getkey("IMAGEDB_URI", ImageDB.default_uri)
         self.imagedb_collection = getkey("IMAGEDB_COLLECTION", 
                                          ImageDB.default_collection)
-        
+        # make sure the datapath exists
+        if not os.path.isdir(self.datapath):
+            try:
+                os.mkdir(self.datapath)
+            except FileNotFoundError:
+                raise ValueError(f"DATAPATH '{self.datapath}' does not exist"
+                                 "and can't be created")
 
+        # make sure ccdd path is real
+        if not os.path.isdir(self.ccddpath):
+            raise ValueError(f"CCDDRONEPATH '{self.ccddpath}' doesn't exist")
+        # make sure it is on PATH
+        if self.ccddpath not in os.getenv('PATH'):
+            os.environ['PATH'] = os.pathsep.join([self.ccddpath, 
+                                                  os.getenv('PATH')])
+        self.outputConfig = path.abspath(path.join(self.ccddpath, 
+                                                   CCDDConfigFile))
+        self.outputMetadata = path.join(self.ccddpath, CCDDMetaFile)
+        log.debug("New executor created, config=%s, meta=%s, imagedb=%s/%s",
+                  self.outputConfig, self.outputMetadata, 
+                  self.imagedb_uri, self.imagedb_collection)
+        
     def readconfig(self):
         """ Get the current config file and return as string """
         files = [path.join(self.ccddpath, 'do_not_touch', 'LastSettings.ini'),

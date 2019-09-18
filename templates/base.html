@@ -70,11 +70,16 @@
 	    <div class="container-fluid" >
 		<div class="nav navbar-header navbar-left">
 		    <a class="navbar-brand" href="https://github.com/xtachx/CCDDrone">
-			{% block brand %}
-			<img src="{{ url_for('static', filename='CCDDroneLogo.png') }}"  class="img-rounded" alt="">
-            CCDDrone
-			{% endblock %}
+                {% block brand %}
+                <img src="{{ url_for('static', filename='CCDDroneLogo.png') }}"  class="img-rounded" alt="">
+                CCDDrone
+                {% endblock %}
 		    </a>
+        </div>
+        <div class="nav navbar-header navbar-right">
+		    <span class="navbar-brand">
+                <img src="{{ url_for('static', filename='SiteLogo.png') }}"  class="img-rounded" alt=" ">
+		    </span>
         </div>
 		<div class="collapse navbar-collapse" id="navbarcontent" >
 		    <ul class="nav navbar-nav" >
@@ -83,14 +88,13 @@
 			{% block navbarlinks %}{% endblock %}
 		    </ul>
             <ul class="nav navbar-nav navbar-right">
-                {{ navbardropdown("External Links", [
-                    ('https://'+hostname()+':11000', "Slowcontrol"),
-                    ('https://confluence.pnnl.gov/confluence/display/CCDRND/CCD+Research+Home', "Confluence"),
-                    ('https://jira.pnnl.gov/jira/projects/CAS/issues', "JIRA"),
-                    ('https://stash.pnnl.gov/projects/CAS', "Stash (code repo)"),
-                    ]) }}
                 {% block navbarextra %}{% endblock %}
+                {% if 'SITE_EXTERNAL_LINKS' in config %}
+                {{ navbardropdown("External Links", config['SITE_EXTERNAL_LINKS']) }}
+                {% endif %}
+
             </ul>
+            
 		</div>
 	    </div>
 	</nav>
@@ -119,7 +123,7 @@
     <div id="footer">
         <footer class="page-footer" style="color:lightgray; text-align:center">
             CCDDroneGUI running on host <em>{{ hostname() }}.</em>
-            CCDDrone installed at <em>{{ ccddpath() }}</em>
+            CCDDrone installed at <em>{{ config.get('CCDDRONEPATH','UNKNOWN') }}</em>
         </footer>
     </div>
 
