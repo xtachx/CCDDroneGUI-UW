@@ -15,5 +15,6 @@ setup(name='CCDDroneGUI',
           'flask-bootstrap',
           'pymongo',
           'astropy',
+          'gunicorn',
       ],
 )
