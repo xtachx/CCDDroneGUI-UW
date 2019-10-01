@@ -9,7 +9,8 @@
 
 {% block pagecontent %}
 <form method="POST" action="{{ url_for('editconfig') }}" class="form">
-  <textarea name="config" id="config" class="form-control" style="height:700px">{{ config }}</textarea>
+  <textarea name="config" id="config" class="form-control"
+  style="height:700px">{{ droneconfig | default('') }}</textarea>
   <div style="text-align: right">
     <a href="{{ url_for('index') }}" class="btn btn-warning">Cancel</a>
     <button type="submit" name="save" class="btn btn-primary">Save only</button>

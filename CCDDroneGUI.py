@@ -167,7 +167,7 @@ def create_app(cfgfile=None, instance_path=None):
             flash(f"Unable to load config file {app.executor.outputConfig}",
                   'danger')
         return render_template("editconfig.html", 
-                               config=config if config is not None else "")
+                               droneconfig=config if config is not None else "")
 
 
     @app.route('/abort', methods=('POST', ))
