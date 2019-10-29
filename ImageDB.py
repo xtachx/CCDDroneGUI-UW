@@ -61,8 +61,7 @@ class ImageDB(object):
         self.collection.create_index('filename', unique=True)
         self.collection.create_index('EXPSTART')
         self.collection.create_index('RUNTYPE')
-                
-        
+
     def getconfig(self):
         dbconfig = self.collection.config.find_one({'_id': __name__})
         if dbconfig:
@@ -120,3 +119,10 @@ class ImageDB(object):
     def find_one(self, *args, **kwargs):
         """ Run `pymongo.Collection.find_one` with the args provided """
         return self.collection.find_one(*args, **kwargs)
+
+    def count(self, filter=None):
+        """ Count number of entries passing filter, or all documents """
+        if not filter:
+            return self.collection.estimated_document_count()
+        else:
+            return self.collection.count_documents(filter)

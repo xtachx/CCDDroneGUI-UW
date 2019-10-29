@@ -204,11 +204,75 @@ def create_app(cfgfile=None, instance_path=None):
             return send_file(tmpname)
         return abort(500, "something went wrong sending file...")
 
-    @app.route('/list')
-    def list():
+    def datatableentry(item, colnames):
+        """ Format a mongodb result to an object to put in a DataTable """
+        res = { name: item.get(name, None) for name in colnames }
+        filename = res.get('filename')
+        if filename:
+            link = f"<a href=\"{ url_for('showfile', filename=filename) }\">"
+            link += f"{filename}</a>"
+            res['filename'] = link
+        return res
+
+    @app.route('/api/DataTable', methods=('GET','POST'))
+    def datatable():
+        """ Process a jquery DataTable request """
+        req = request.json
+        # construct a mongo filter object from the request
+        query = {}
+        sort = {}
+        #search for individual column filters
+        columns = req.get('columns', [])
+        colnames = [col['name'] for col in columns]
+        for col in columns:
+            val = col.get('search', {}).get('value', None)
+            if val:
+                query[col['name']] = {'$regex': val}
+
+        #test the global filter
+        globalsearch = req.get('search', {}).get('value', None)
+        if globalsearch:
+            query['$or'] = [{name: {'$regex': globalsearch }} 
+                            for name in colnames ]
+        #determine ordering
+        sort = []
+        for order in req.get('order', []):
+            sort.append((colnames[order['column']], 
+                         -1 if order['dir'] == 'desc' else 1))
+        if not sort:
+            sort = (('EXPSTART', -1),)
+            
+        #return only data for requested columns
+        projection = {name: True for name in colnames }
+        projection['_id'] = False
+
+        #now query the DB
+        total = getdb().count()
+        match = getdb().count(query)
+        data = []
+        if match > 0:
+            cursor = getdb().find(query, projection, 
+                                  sort=sort, 
+                                  skip=req.get('start', 0),
+                                  limit=req.get('length', 0),
+                              )
+            data = [datatableentry(item, colnames) for item in cursor]
+
+        return json.jsonify({
+            'draw': req['draw'],
+            'recordsTotal': total,
+            'recordsFiltered': match,
+            'data': data,
+            })
+
+        print(req)
+        # need to construct a mongo filter object from the request
+        return abort(500)
+        return json.jsonify(req)
+
+    @app.route('/listdata')
+    def listdata():
         columns = ('EXPSTART', 'RUNTYPE', 'NOTES', 'filename')
-        data = getdb().find({}, {c:True for c in columns},
-                            sort=(('EXPSTART',-1),) )
 
         # find columns that have limited choices
         selectOptions = {}
@@ -217,7 +281,7 @@ def create_app(cfgfile=None, instance_path=None):
             if key in columns and allowed:
                 selectOptions[key] = allowed
         return render_template("datatable.html",
-                               columns=columns, data=data, 
+                               columns=columns, data=[], 
                                selectOptions=selectOptions)
         
     return app

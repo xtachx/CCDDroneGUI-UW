@@ -15,7 +15,7 @@
 <script>
   $(document).ready(function() {
     $(".column-filter").on('click', function(event){ event.preventDefault(); event.stopPropagation(); })
-      .on('change clear input keydown keypress keyup submit', function(event){ 
+      .on('change clear input submit', function(event){ 
         event.stopPropagation(); 
         var col = table.column($(this).data('colnum'));
         if(col.search() !== this.value ){
@@ -25,7 +25,15 @@
     
     
     var table = $('#datatable').DataTable({
-      paging: false,
+      serverSide: true,
+      ajax: {
+        url: "/api/DataTable",
+        contentType: 'application/json; charset=utf-8',
+        method: 'POST',
+        data: function(data){ return JSON.stringify(data); },
+      },
+      paging: true,
+      pageLength: 25,
       searching: true,
       scrollX: false,
       ordering: true,
@@ -36,7 +44,11 @@
       columnDefs: [
         { targets: '_all', searchable: true },
       ],
-      dom: 'iti',
+      columns: [ {% for col in columns %}
+        { name: "{{ col }}", data: "{{ col }}" },
+        {% endfor %}
+      ],
+      //dom: 'liftipr',
     });
     //add per-column 
      
