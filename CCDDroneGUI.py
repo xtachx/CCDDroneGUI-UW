@@ -155,6 +155,12 @@ def create_app(cfgfile=None, instance_path=None):
         flash('Erase procedure started', 'success')
         return redirect(url_for('index'))
 
+    @app.route('/togglebias/<value>', methods=('POST',))
+    def togglebias(value):
+        app.executor.ToggleBias(value)
+        flash(f'ToggleBias {value} executed')
+        return redirect(url_for('index'))
+
     @app.route('/editconfig', methods=('GET', 'POST'))
     def editconfig():
         if request.method == 'POST':

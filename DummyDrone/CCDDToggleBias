@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "Switching relay bias ${1}... OK!"
+exit 0

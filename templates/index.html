@@ -54,7 +54,11 @@ document.addEventListener('DOMContentLoaded', function(){
     event.stopPropagation();
     event.preventDefault();
     if($(this).hasClass("disabled")) return;
-	if(confirm("Are you sure you want to run '"+$(this).text()+"'?")){
+    var conf = !($(this).hasClass("confirm"));
+    if(!conf){
+      conf = confirm("Are you sure you want to run '"+$(this).text()+"'?");
+    }
+	if(conf){
 		$("<form></form>").css('display', 'none')
 			.attr('method','POST').attr('action',$(this).attr('href'))
 			.appendTo("body").submit();
@@ -67,13 +71,28 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 {% block pageheader %} 
-<div class="col-sm-3"><h1> CCDDrone GUI </h1></div>
-<div class="col-sm-9">
-  <div class="btn-group btn-group-justified">
-    <a class="btn btn-warning postlink" id="dostartup" href="{{ url_for('startup') }}">Startup and erase</a>
-    <a class="btn btn-info postlink" id="doerase" href="{{ url_for('erase') }}">Erase</a>
-    <a class="btn btn-primary" href="{{ url_for('editconfig') }}">Edit Settings</a>
-    <a class="btn btn-success" href="{{ url_for('expose') }}">Expose</a>
+<div class="col-sm-5"><h1> CCDDrone GUI </h1></div>
+<div class="col-sm-1"><h4>Actions:</h4></div>
+<div class="col-sm-6">
+  <div class="btn-toolbar">
+    <div class="btn-group">
+      <a class="btn btn-default postlink confirm" id="dostartup" href="{{ url_for('startup') }}">Startup and erase</a>
+      <a class="btn btn-default postlink confirm" id="doerase" href="{{ url_for('erase') }}">Erase</a>
+      <div class="btn-group">
+        <button id="setbiasgrp" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+        Toggle Bias <span class="caret"></span></button>
+        <ul class="dropdown-menu">
+          <li><a class="postlink" id="biason" href="{{ url_for('togglebias', value='on') }}">on</a></li>
+          <li><a class="postlink" id="biasoff" href="{{ url_for('togglebias', value='off') }}">off</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="btn-group">
+      <a class="btn btn-primary" href="{{ url_for('editconfig') }}">Edit Settings</a>
+    </div>
+    <div class="btn-group">
+      <a class="btn btn-success" href="{{ url_for('expose') }}">Expose</a>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -246,3 +246,8 @@ class Executor(object):
         self.exposethread = Thread(target=self._do_expose_loop,
                                    args=(fitsfile, seconds))
         self.exposethread.start()
+
+    def ToggleBias(self, value):
+        """ Toggle the bias on or off """
+        return self._run(['./CCDDToggleBias', value], 
+                         cwd=self.ccddpath)
