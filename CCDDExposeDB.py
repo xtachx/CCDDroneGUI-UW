@@ -10,6 +10,7 @@ import tempfile
 import atexit
 import signal
 from astropy.io import fits
+import time
 
 def printusage():
     print(F"Usage: {sys.argv[0]} <exposure> <fitsfile> <metafile> [<thumb>]")
@@ -29,6 +30,7 @@ signal.signal(signal.SIGTERM, killchild)
 
 def run_context(*args, **kwargs):
     global _child_pid
+
     proc = subprocess.Popen(*args, **kwargs)
     _child_pid = proc.pid
     returncode = proc.wait()
@@ -80,18 +82,22 @@ print("File saved to", fitsfile)
 
 # call updatedb
 print("Running CCDDUpdateDB", flush=True)
+print("Metafile is "+metafile)
 run_context(['./CCDDUpdateDB.py', fitsfile, metafile])
 
+time.sleep(1)
 # generate the thumbnail
 if thumb is not None:
     print("Generating png image", flush=True)
+    
     with tempfile.NamedTemporaryFile(suffix='.png') as tmpfile:
         tmpname = tmpfile.name
-        run_context(['fits2bitmap', fitsfile, '-o', tmpname, '--percent', '98'])
+        run_context(['fits2bitmap', '-o', tmpname, '--percent', '98',fitsfile])
         run_context(['convert', tmpname, '-scale', '50%', thumb])
 
 
 #print some statistics
+
 data = fits.getdata(fitsfile)
 print("Image info:")
 print("  Shape:", data.shape)

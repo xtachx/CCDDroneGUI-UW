@@ -174,16 +174,18 @@ class Executor(object):
         if env is not None:
             env = dict(os.environ, **env, 
                        PYTHONPATH=os.pathsep.join(sys.path))
-            
+           
         self.process = subprocess.Popen(args, cwd=cwd, stdout=self.logfile,
                                         stderr=subprocess.STDOUT, env=env)
 
+        
+
     def StartupAndErase(self):
-        return self._run(['./CCDDStartupAndErase', self.outputConfig], 
+        return self._run(['./CCDDStartupAndErase', path.abspath(self.outputConfig)], 
                          cwd=self.ccddpath)
 
     def PerformEraseProcedure(self):
-        return self._run(['./CCDDPerformEraseProcedure', self.outputConfig], 
+        return self._run(['./CCDDPerformEraseProcedure', path.abspath(self.outputConfig)], 
                          cwd=self.ccddpath)
 
     def ApplyNewSettings(self, newconf=None):
