@@ -12,6 +12,12 @@ import signal
 from astropy.io import fits
 import time
 
+# Add analysis files
+sys.path.append("analysis")
+import DamicImage
+import PixelDistribution as pd
+import PoissonGausFit as poisgaus 
+
 def printusage():
     print(F"Usage: {sys.argv[0]} <exposure> <fitsfile> <metafile> [<thumb>]")
     sys.exit(1)
@@ -96,19 +102,33 @@ if thumb is not None:
         run_context(['convert', tmpname, '-scale', '50%', thumb])
 
 
-#print some statistics
 
+
+# Read average image to process
 data = fits.getdata(fitsfile)
-print("Image info:")
-print("  Shape:", data.shape)
-print("  Min:  ", data.min())
-print("  Max:  ", data.max())
-print("  Mean: ", round(data.mean(),2))
-print("  Std:  ", round(data.std(),2))
-std = data.std(axis=0)
-print("  Min column std: ", round(std.min(),2))
-print("  Max column std: ", round(std.max(),2))
-print("  Mean column std:", round(std.mean(),2))
+damicimage = DamicImage.DamicImage(data, filename=fitsfile, minRange=500, reverse=False)
+
+# Compute metrics
+fitmin = poisgaus.computeGausPoissDist(damicimage, npoisson=20)
+fitparams = poisgaus.parseFitMinimum(fitmin)
+imageNoise = pd.convertValErrToString(fitparams["sigma"])
+darkCurrent = pd.convertValErrToString(fitparams["lambda"])
+aduEstimate = pd.convertValErrToString(fitparams["ADU"])
+tailRatio = pd.computeImageTailRatio(damicimage)
+
+# Print information and metrics
+print("Image Information:")
+print("\tShape:", data.shape)
+print("\tMin:  ", data.min())
+print("\tMax:  ", data.max())
+print("\tMean: ", round(data.mean(),2))
+print("\tStd:  ", round(data.std(),2))
+
+print("Image Metrics:")
+print("\tImage Noise [ADU]:              ", imageNoise)
+print("\tDark Current [e-/pix/exposure]: ", darkCurrent)
+print("\tPixel to Noise Tail Ratio:      ", tailRatio)
+print("\tEstimated e- to ADU Conversion: ", aduEstimate)
     
 print("Done")
 sys.exit(0)
