@@ -5,3 +5,4 @@ logs/
 static/lastimg.png
 DummyDrone/config/*_GUI.*
 data/
+*.pyc
