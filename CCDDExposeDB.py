@@ -17,6 +17,7 @@ sys.path.append("analysis")
 import DamicImage
 import PixelDistribution as pd
 import PoissonGausFit as poisgaus 
+import numpy as np
 
 def printusage():
     print(F"Usage: {sys.argv[0]} <exposure> <fitsfile> <metafile> [<thumb>]")
@@ -106,7 +107,7 @@ if thumb is not None:
 
 # Read average image to process
 data = fits.getdata(fitsfile)
-damicimage = DamicImage.DamicImage(data, filename=fitsfile, minRange=500, reverse=False)
+damicimage = DamicImage.DamicImage(data, filename=fitsfile, minRange=200, reverse=False)
 
 # Compute metrics
 fitmin = poisgaus.computeGausPoissDist(damicimage, npoisson=20)
@@ -131,4 +132,15 @@ print("\tPixel to Noise Tail Ratio:      ", tailRatio)
 print("\tEstimated e- to ADU Conversion: ", aduEstimate)
     
 print("Done")
+
+# Make histogram of the spectrum and plot fit over it
+fig, ax = damicimage.plotSpectrum()
+fitx = np.linspace(damicimage.centers[0], damicimage.centers[-1], 2000)
+ax.plot(fitx, poisgaus.fGausPoisson(fitx, *poisgaus.paramsToList(fitmin.params)), "--r", linewidth=2)
+ax.set_yscale("log")
+ax.set_ylim(0.1, data.size)
+ax.set_xlim(damicimage.centers[damicimage.centers.size // 3], damicimage.centers[-1])
+
+# save the image
+fig.savefig("static/lastimg_spectrum.png", bbox_inches="tight")
 sys.exit(0)
